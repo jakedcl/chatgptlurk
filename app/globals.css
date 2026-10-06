@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(16, 185, 129, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(20, 184, 166, 0.06), transparent 60%),
+    #09090b;
+  color: #e4e4e7;
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-white/[0.07] bg-zinc-900/60 shadow-xl shadow-black/20 backdrop-blur-sm;
+  }
+  .icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-zinc-300 transition hover:bg-white/[0.07] hover:text-white disabled:pointer-events-none disabled:opacity-30;
+  }
+  .text-btn {
+    @apply inline-flex h-9 items-center justify-center rounded-lg border border-white/10 px-3 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:opacity-40;
+  }
+}
+
+@keyframes flash {
+  0% {
+    background-color: rgba(251, 191, 36, 0.18);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.35);
+}

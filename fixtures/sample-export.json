@@ -1,0 +1,134 @@
+[
+  {
+    "id": "conv-bread",
+    "title": "Weekend bread plan",
+    "create_time": 1718474700,
+    "mapping": {
+      "node-system": {
+        "message": {
+          "id": "msg-system",
+          "author": { "role": "system" },
+          "create_time": 1718474700,
+          "content": { "content_type": "text", "parts": ["You are a baker."] }
+        }
+      },
+      "node-sourdough": {
+        "message": {
+          "id": "msg-sourdough",
+          "author": { "role": "user" },
+          "create_time": 1718474700,
+          "content": {
+            "content_type": "text",
+            "parts": ["How long should a practice sourdough starter ferment before the first loaf?"]
+          },
+          "metadata": {}
+        }
+      },
+      "node-assistant": {
+        "message": {
+          "id": "msg-assistant",
+          "author": { "role": "assistant" },
+          "create_time": 1718474800,
+          "content": {
+            "content_type": "text",
+            "parts": ["A week of daily feeds is a common practice."]
+          }
+        }
+      },
+      "node-hidden": {
+        "message": {
+          "id": "msg-hidden",
+          "author": { "role": "user" },
+          "create_time": 1718474900,
+          "content": { "content_type": "text", "parts": ["do not show this hidden prompt"] },
+          "metadata": { "is_visually_hidden_from_conversation": true }
+        }
+      },
+      "node-picture": {
+        "message": {
+          "id": "msg-picture",
+          "author": { "role": "user" },
+          "create_time": 1718474760,
+          "content": {
+            "content_type": "multimodal_text",
+            "parts": [
+              "What is in this picture?",
+              { "content_type": "image_asset_pointer", "asset_pointer": "file-service://synthetic-image", "width": 32, "height": 32 },
+              { "content_type": "image_asset_pointer", "asset_pointer": "file-service://synthetic-image-2", "width": 32, "height": 32 }
+            ]
+          },
+          "metadata": {}
+        }
+      }
+    }
+  },
+  {
+    "id": "conv-train",
+    "title": "Train schedule notes",
+    "create_time": 1718497800,
+    "mapping": {
+      "node-train": {
+        "message": {
+          "id": "msg-train",
+          "author": { "role": "user" },
+          "create_time": 1718497800,
+          "content": {
+            "content_type": "multimodal_text",
+            "parts": [
+              {
+                "content_type": "audio_transcription",
+                "text": "The noon train to Beacon is delayed."
+              }
+            ]
+          },
+          "metadata": {
+            "attachments": [{ "name": "timetable.txt", "mime_type": "text/plain" }]
+          }
+        }
+      },
+      "node-context": {
+        "message": {
+          "id": "msg-context",
+          "author": { "role": "user" },
+          "create_time": 1718497900,
+          "content": {
+            "content_type": "user_editable_context",
+            "parts": ["do not show custom instructions"]
+          },
+          "metadata": { "is_user_system_message": true }
+        }
+      },
+      "node-empty": { "message": null }
+    }
+  },
+  {
+    "id": "conv-december",
+    "title": "December packing list",
+    "create_time": 1733151600,
+    "mapping": {
+      "node-pack": {
+        "message": {
+          "id": "msg-pack",
+          "author": { "role": "user" },
+          "create_time": 1733151600,
+          "content": {
+            "content_type": "text",
+            "parts": ["Pack a weekend bag for a fictional city break."]
+          }
+        }
+      },
+      "node-voice": {
+        "message": {
+          "id": "msg-voice",
+          "author": { "role": "user" },
+          "create_time": 1733162400,
+          "content": {
+            "content_type": "multimodal_text",
+            "parts": [{ "content_type": "audio_asset_pointer", "asset_pointer": "file-service://synthetic-audio" }]
+          },
+          "metadata": { "voice_mode_message": true }
+        }
+      }
+    }
+  }
+]
