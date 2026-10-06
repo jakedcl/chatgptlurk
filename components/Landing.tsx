@@ -28,8 +28,8 @@ export function Landing({ timezone, timezones, onTimezone, onBrowse, onFile, err
       </header>
 
       <p className="max-w-2xl text-[15px] leading-7 text-zinc-300">
-        Drop a ChatGPT data export and this page builds a calendar of the prompts you sent. Parsing happens in your
-        browser. The file is not uploaded.
+        Drop a ChatGPT data export and this page builds a calendar of the prompts you sent. Open a conversation title
+        from a day or from search to read that chat in order. Parsing happens in your browser. The file is not uploaded.
       </p>
 
       <section className="card mt-6 p-5 sm:p-6">

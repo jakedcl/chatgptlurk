@@ -12,9 +12,10 @@ type Props = {
   searching: boolean;
   onPickDay: (date: string) => void;
   onPickHit: (hit: SearchHit) => void;
+  onOpenConversation: (hit: SearchHit) => void;
 };
 
-export function SearchBox({ query, setQuery, result, searching, onPickDay, onPickHit }: Props) {
+export function SearchBox({ query, setQuery, result, searching, onPickDay, onPickHit, onOpenConversation }: Props) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -125,25 +126,42 @@ export function SearchBox({ query, setQuery, result, searching, onPickDay, onPic
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto py-1 [scrollbar-width:thin]">
             {result.hits.map((h) => (
-              <li key={h.id}>
+              <li key={h.id} className="px-4 py-2.5 hover:bg-white/[0.05]">
+                <div className="flex min-w-0 items-baseline gap-2 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPickHit(h);
+                      setOpen(false);
+                    }}
+                    className="shrink-0 bg-transparent font-medium text-zinc-300 hover:text-white"
+                  >
+                    {shortDate(h.date)}
+                  </button>
+                  <span className="shrink-0 font-mono text-zinc-500">{time12(h.time)}</span>
+                  <button
+                    type="button"
+                    data-testid="search-open-conversation"
+                    onClick={() => {
+                      onOpenConversation(h);
+                      setOpen(false);
+                    }}
+                    className="min-w-0 flex-1 truncate bg-transparent text-left text-emerald-300/80 hover:underline"
+                    title="Open this conversation"
+                    aria-label={`Open conversation: ${h.t}`}
+                  >
+                    <Highlight text={h.t} terms={terms} />
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
                     onPickHit(h);
                     setOpen(false);
                   }}
-                  className="block w-full px-4 py-2.5 text-left hover:bg-white/[0.05]"
+                  className="mt-0.5 line-clamp-2 w-full bg-transparent text-left text-[13px] leading-snug text-zinc-300"
                 >
-                  <div className="flex items-baseline gap-2 text-[11px]">
-                    <span className="shrink-0 font-medium text-zinc-300">{shortDate(h.date)}</span>
-                    <span className="shrink-0 font-mono text-zinc-500">{time12(h.time)}</span>
-                    <span className="truncate text-emerald-300/80">
-                      <Highlight text={h.t} terms={terms} />
-                    </span>
-                  </div>
-                  <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-zinc-300">
-                    <Highlight text={h.snippet} terms={terms} />
-                  </p>
+                  <Highlight text={h.snippet} terms={terms} />
                 </button>
               </li>
             ))}

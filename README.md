@@ -1,6 +1,6 @@
 # Prompt Calendar
 
-A public, free-to-host calendar of the prompts you sent ChatGPT. You upload your own OpenAI data export in the browser. The site turns it into a year heatmap, a month grid, a day list, and search.
+A public, free-to-host calendar of the prompts you sent ChatGPT. You upload your own OpenAI data export in the browser. The site turns it into a year heatmap, a month grid, a day list, search, and a conversation view.
 
 ## Privacy
 
@@ -42,7 +42,9 @@ npx serve out -l 43123
 
 Days are bucketed in `America/New_York` until you pick another timezone. The picker rebuckets the prompts already in memory. It does not read the file again.
 
-Search matches every word. Wrap a phrase in quotes for an exact match. Keyboard: `←/→` day, `↑/↓` week, `Shift+←/→` next active day, `[` / `]` month, `/` search.
+Search matches every word. Wrap a phrase in quotes for an exact match. Click a conversation title in the day list or in search to read that chat's prompts in order. Previous and next step through conversations. Back returns to the day. The conversation list is grouped once from the prompt index already in memory. It does not read the export again.
+
+Keyboard: `←/→` day, `↑/↓` week, `Shift+←/→` next active day, `[` / `]` month, `/` search. Inside a conversation: `←/→` previous and next chat, `Esc` back to the day.
 
 Large exports (about 150 MB of JSON) are streamed in the worker so the page stays responsive. The parser keeps one conversation at a time, plus the prompt index. If the browser runs out of memory, the page shows an error and does not keep the file.
 

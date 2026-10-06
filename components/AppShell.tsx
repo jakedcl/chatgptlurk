@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { indexConversations, type ConversationIndex } from "@/lib/conversations";
 import { clearLibrary, loadLibrary, saveLibrary, storageErrorNote } from "@/lib/idb";
 import { friendlyError } from "@/lib/format";
 import { buildSummary, rebucketPrompts } from "@/lib/summary";
@@ -12,6 +13,7 @@ import { BootScreen, Landing, ParseScreen } from "./Landing";
 
 type Library = {
   prompts: Prompt[];
+  conversations: ConversationIndex;
   summary: Summary;
   sourceName: string;
   persisted: boolean;
@@ -22,14 +24,16 @@ type Library = {
 
 type Status = { kind: "boot" } | { kind: "empty" } | { kind: "parsing"; fileName: string; progress: Progress } | { kind: "ready" };
 
-type Nav = { date: string | null; q: string };
+type Nav = { date: string | null; q: string; conversation: string | null };
 
 function readNav(): Nav {
   const url = new URL(window.location.href);
   const date = url.searchParams.get("date");
+  const conversation = url.searchParams.get("c");
   return {
     date: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
     q: url.searchParams.get("q") ?? "",
+    conversation: conversation && conversation.length <= 500 ? conversation : null,
   };
 }
 
@@ -37,6 +41,7 @@ function clearNav() {
   const url = new URL(window.location.href);
   url.searchParams.delete("date");
   url.searchParams.delete("q");
+  url.searchParams.delete("c");
   window.history.replaceState(null, "", url);
 }
 
@@ -46,7 +51,7 @@ export function AppShell() {
   const [status, setStatus] = useState<Status>({ kind: "boot" });
   const [library, setLibrary] = useState<Library | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
-  const [nav, setNav] = useState<Nav>({ date: null, q: "" });
+  const [nav, setNav] = useState<Nav>({ date: null, q: "", conversation: null });
   const [tzBusy, setTzBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const jobRef = useRef<ParseJob | null>(null);
@@ -76,6 +81,7 @@ export function AppShell() {
         setNav(urlNav);
         setLibrary({
           prompts,
+          conversations: indexConversations(prompts),
           summary: buildSummary(prompts, tz, saved.sourceName),
           sourceName: saved.sourceName,
           persisted: true,
@@ -143,6 +149,7 @@ export function AppShell() {
           const sessionId = (libraryRef.current?.sessionId ?? 0) + 1;
           setLibrary({
             prompts: result.prompts,
+            conversations: indexConversations(result.prompts),
             summary,
             sourceName: result.sourceName,
             persisted,
@@ -150,7 +157,7 @@ export function AppShell() {
             sessionId,
             skippedHidden: result.skippedHidden,
           });
-          setNav({ date: null, q: "" });
+          setNav({ date: null, q: "", conversation: null });
           setStatus({ kind: "ready" });
         })
         .catch((err: unknown) => {
@@ -198,7 +205,7 @@ export function AppShell() {
       const prompts = await rebucketPrompts(current.prompts, tz);
       if (tzGen.current !== gen) return;
       const summary = buildSummary(prompts, tz, current.sourceName);
-      setLibrary({ ...current, prompts, summary });
+      setLibrary({ ...current, prompts, summary, conversations: indexConversations(prompts) });
       try {
         await saveLibrary({ prompts, timezone: tz, sourceName: current.sourceName });
         if (tzGen.current !== gen) return;
@@ -223,7 +230,7 @@ export function AppShell() {
     }
     setLibrary(null);
     setBanner(null);
-    setNav({ date: null, q: "" });
+    setNav({ date: null, q: "", conversation: null });
     clearNav();
     setStatus({ kind: "empty" });
   }
@@ -265,6 +272,7 @@ export function AppShell() {
             key={library.sessionId}
             summary={library.summary}
             prompts={library.prompts}
+            conversations={library.conversations}
             timezone={timezone}
             timezones={timezones}
             sourceName={library.sourceName}
@@ -273,6 +281,7 @@ export function AppShell() {
             skippedHidden={library.skippedHidden}
             initialDate={nav.date}
             initialQuery={nav.q}
+            initialConversation={nav.conversation}
             tzBusy={tzBusy}
             onTimezone={changeTimezone}
             onBrowse={() => fileRef.current?.click()}

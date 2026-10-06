@@ -19,11 +19,13 @@ function PromptItem({
   terms,
   focused,
   sameConvAsPrev,
+  onOpenConversation,
 }: {
   p: Prompt;
   terms: string[];
   focused: boolean;
   sameConvAsPrev: boolean;
+  onOpenConversation: (conversationId: string, promptId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLLIElement>(null);
@@ -55,17 +57,21 @@ function PromptItem({
     <li ref={ref} data-prompt-id={p.id} className={["relative pb-5 pl-6 last:pb-1", focused ? "animate-[flash_1.6s_ease-out]" : ""].join(" ")}>
       <span className="absolute bottom-0 left-[7px] top-2 w-px bg-white/10" />
       <span className="absolute left-0.5 top-1.5 h-3 w-3 rounded-full ring-4 ring-zinc-900" style={{ background: `hsl(${h} 70% 62%)` }} />
-      <div className="mb-1 flex items-baseline gap-2 text-xs">
+      <div className="mb-1 flex min-w-0 items-baseline gap-2 text-xs">
         <time dateTime={p.local} title={p.local} className="shrink-0 font-mono tabular-nums text-zinc-400">
           {time12(p.time)}
         </time>
-        <span
-          className={["truncate font-medium", sameConvAsPrev ? "text-zinc-500" : ""].join(" ")}
+        <button
+          type="button"
+          data-testid="day-open-conversation"
+          onClick={() => onOpenConversation(p.c, p.id)}
+          className={["min-w-0 truncate bg-transparent text-left font-medium hover:underline", sameConvAsPrev ? "text-zinc-500" : ""].join(" ")}
           style={sameConvAsPrev ? undefined : { color: `hsl(${h} 70% 75%)` }}
-          title={p.t}
+          title={`Open ${p.t}`}
+          aria-label={`Open conversation: ${p.t}`}
         >
           {p.t}
-        </span>
+        </button>
         {p.voice && (
           <span className="shrink-0 rounded bg-sky-500/15 px-1 text-[10px] text-sky-300" title="Voice message">
             voice
@@ -98,9 +104,10 @@ type Props = {
   focusId: string | null;
   onStep: (dir: -1 | 1) => void;
   canStep: { prev: boolean; next: boolean };
+  onOpenConversation: (conversationId: string, promptId: string) => void;
 };
 
-function DayPanelImpl({ date, prompts, loading, error, terms, focusId, onStep, canStep }: Props) {
+function DayPanelImpl({ date, prompts, loading, error, terms, focusId, onStep, canStep, onOpenConversation }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!focusId) listRef.current?.scrollTo({ top: 0 });
@@ -191,7 +198,14 @@ function DayPanelImpl({ date, prompts, loading, error, terms, focusId, onStep, c
         {prompts && prompts.length > 0 && (
           <ol>
             {prompts.map((p, i) => (
-              <PromptItem key={p.id} p={p} terms={terms} focused={p.id === focusId} sameConvAsPrev={i > 0 && prompts[i - 1].c === p.c} />
+              <PromptItem
+                key={p.id}
+                p={p}
+                terms={terms}
+                focused={p.id === focusId}
+                sameConvAsPrev={i > 0 && prompts[i - 1].c === p.c}
+                onOpenConversation={onOpenConversation}
+              />
             ))}
           </ol>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { adjacentConversation, getConversation, type ConversationIndex } from "@/lib/conversations";
 import type { Prompt, SearchHit, SearchResponse } from "@/lib/types";
 import type { Summary } from "@/lib/types";
 import { addDays, addMonths, monthLabel, shortDate, todayIn, WEEKDAYS } from "@/lib/dates";
@@ -11,6 +12,7 @@ import { groupByDate } from "@/lib/summary";
 import { YearHeatmap } from "./YearHeatmap";
 import { MonthGrid } from "./MonthGrid";
 import { DayPanel } from "./DayPanel";
+import { ConversationView } from "./ConversationView";
 import { SearchBox } from "./SearchBox";
 import { queryTerms } from "./Highlight";
 import { Logo } from "./Logo";
@@ -18,6 +20,7 @@ import { Logo } from "./Logo";
 type Props = {
   summary: Summary;
   prompts: Prompt[];
+  conversations: ConversationIndex;
   timezone: string;
   timezones: string[];
   sourceName: string;
@@ -26,6 +29,7 @@ type Props = {
   skippedHidden: number;
   initialDate: string | null;
   initialQuery: string;
+  initialConversation: string | null;
   tzBusy: boolean;
   onTimezone: (tz: string) => void;
   onBrowse: () => void;
@@ -35,6 +39,7 @@ type Props = {
 export function CalendarApp({
   summary,
   prompts,
+  conversations,
   timezone,
   timezones,
   sourceName,
@@ -43,6 +48,7 @@ export function CalendarApp({
   skippedHidden,
   initialDate,
   initialQuery,
+  initialConversation,
   tzBusy,
   onTimezone,
   onBrowse,
@@ -59,6 +65,8 @@ export function CalendarApp({
   const maxMonth = last.slice(0, 7);
   const shownMonth = month < minMonth ? minMonth : month > maxMonth ? maxMonth : month;
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(initialConversation);
+  const [conversationFocus, setConversationFocus] = useState<string | null>(null);
   const [query, setQuery] = useState(initialQuery);
   const [searchRes, setSearchRes] = useState<{ tz: string; res: SearchResponse } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -91,13 +99,30 @@ export function CalendarApp({
     else u.searchParams.delete("date");
     if (query.trim()) u.searchParams.set("q", query.trim());
     else u.searchParams.delete("q");
+    if (conversationId) u.searchParams.set("c", conversationId);
+    else u.searchParams.delete("c");
     window.history.replaceState(null, "", u);
-  }, [selected, query]);
+  }, [selected, query, conversationId]);
 
   const selectDay = useCallback((date: string, focus: string | null = null) => {
     setSelected(date);
     setMonth(date.slice(0, 7));
     setFocusId(focus);
+  }, []);
+
+  const openConversation = useCallback(
+    (id: string, promptId: string | null, date: string | null) => {
+      if (date) selectDay(date, promptId);
+      else if (promptId) setFocusId(promptId);
+      setConversationFocus(promptId);
+      setConversationId(id);
+    },
+    [selectDay],
+  );
+
+  const closeConversation = useCallback(() => {
+    setConversationId(null);
+    setConversationFocus(null);
   }, []);
 
   const stepActive = useCallback(
@@ -120,6 +145,7 @@ export function CalendarApp({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (conversationId) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -137,9 +163,42 @@ export function CalendarApp({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selected, selectDay, stepActive, shownMonth]);
+  }, [selected, selectDay, stepActive, shownMonth, conversationId]);
 
-  const onPickHit = useCallback((h: SearchHit) => selectDay(h.date, h.id), [selectDay]);
+  useEffect(() => {
+    if (!conversationId) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeConversation();
+        return;
+      }
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      const neighbor = adjacentConversation(conversations, conversationId, e.key === "ArrowLeft" ? -1 : 1);
+      if (neighbor) openConversation(neighbor.id, null, null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [conversationId, conversations, closeConversation, openConversation]);
+
+  const onPickHit = useCallback(
+    (h: SearchHit) => {
+      closeConversation();
+      selectDay(h.date, h.id);
+    },
+    [closeConversation, selectDay],
+  );
+
+  const onPickDay = useCallback(
+    (date: string) => {
+      closeConversation();
+      selectDay(date);
+    },
+    [closeConversation, selectDay],
+  );
 
   const monthTotal = summary.months[shownMonth] ?? 0;
   const monthDays = useMemo(() => activeDates.filter((d) => d.startsWith(shownMonth)), [activeDates, shownMonth]);
@@ -170,8 +229,9 @@ export function CalendarApp({
             setQuery={setQuery}
             result={liveRes}
             searching={searching}
-            onPickDay={(d) => selectDay(d)}
+            onPickDay={onPickDay}
             onPickHit={onPickHit}
+            onOpenConversation={(hit) => openConversation(hit.c, hit.id, hit.date)}
           />
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -218,6 +278,19 @@ export function CalendarApp({
         )}
       </header>
 
+      {conversationId ? (
+        <ConversationView
+          group={getConversation(conversations, conversationId)}
+          prev={adjacentConversation(conversations, conversationId, -1)}
+          next={adjacentConversation(conversations, conversationId, 1)}
+          total={conversations.order.length}
+          focusId={conversationFocus}
+          terms={terms}
+          onBack={closeConversation}
+          onOpen={(id) => openConversation(id, null, null)}
+        />
+      ) : (
+      <>
       <section className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
         <Stat
           label="Prompts"
@@ -356,9 +429,12 @@ export function CalendarApp({
             focusId={focusId}
             onStep={stepActive}
             canStep={canStep}
+            onOpenConversation={(id, promptId) => openConversation(id, promptId, null)}
           />
         </aside>
       </div>
+      </>
+      )}
 
       <footer className="mt-8 space-y-1 text-center text-[11px] leading-5 text-zinc-600">
         <p>
@@ -366,7 +442,11 @@ export function CalendarApp({
           {persisted ? " · saved in IndexedDB on this browser only" : " · not saved locally"}.
           {skippedHidden > 0 ? ` Skipped ${skippedHidden} hidden or system message${skippedHidden === 1 ? "" : "s"}.` : ""}
         </p>
-        <p>←/→ day · ↑/↓ week · shift+←/→ next active day · [ / ] month · / search</p>
+        <p>
+          {conversationId
+            ? "Esc back to the day · ←/→ previous and next conversation · / search"
+            : "←/→ day · ↑/↓ week · shift+←/→ next active day · [ / ] month · / search"}
+        </p>
       </footer>
     </div>
   );

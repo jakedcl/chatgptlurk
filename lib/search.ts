@@ -39,6 +39,7 @@ export async function searchPrompts(prompts: Prompt[], q: string, limit = 150): 
   matches.sort((a, b) => Number(a.inTitle) - Number(b.inTitle) || b.p.ts - a.p.ts);
   const hits: SearchHit[] = matches.slice(0, limit).map(({ p, hay, inTitle }) => ({
     id: p.id,
+    c: p.c,
     date: p.date,
     time: p.time,
     t: p.t,

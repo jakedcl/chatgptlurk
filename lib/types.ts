@@ -32,6 +32,8 @@ export type Summary = {
 
 export type SearchHit = {
   id: string;
+  /** conversation id */
+  c: string;
   date: string;
   time: string;
   t: string;
