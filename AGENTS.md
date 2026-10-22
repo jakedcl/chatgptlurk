@@ -1,9 +1,25 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# AGENTS.md — chatgptlurk
 
-# This is NOT the Next.js you know
+Prompt Calendar: a free, static site that turns your own ChatGPT data export into a year heatmap, month grid, day list, search, and conversation view. Files never leave the visitor's browser.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+## Stack
+- Next.js 16.3 with `output: "export"` (static site, `out/`), React 19.2, TypeScript, Tailwind CSS 4.
+- `fflate` inflates the zip in the browser. A Web Worker parses it. IndexedDB stores a compact prompt index.
+- Tests: node `--test` via tsx for `lib/*.test.ts`, Playwright for `e2e/`.
+- Vercel Hobby, Next.js preset, no env vars. Pushes to `main` redeploy.
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+## Layout
+- `app/` (single page). `components/` CalendarApp, YearHeatmap, MonthGrid, DayPanel, ConversationView, SearchBox, Landing.
+- `lib/` parse-file, split-json, conversations, extract, search, dates/time, idb, worker-client. `workers/parse.worker.ts`.
+- `fixtures/sample-export.json` is synthetic.
 
-<!-- END:nextjs-agent-rules -->
+## Commands
+- `npm run dev` (http://127.0.0.1:43123), `npm test`, `npm run test:e2e`, `npm run build`, `npx serve out -l 43123` to preview.
+
+## Gotchas
+- Privacy is the product. No API routes, server code, database, or uploads. Don't add any.
+- Never commit a real `conversations.json` or export.
+- Only `author.role === "user"` messages are kept. Hidden, system, and `user_editable_context` messages are skipped.
+- Prefer `full-conversations.json`; otherwise combine `conversations-000.json` parts.
+- Exports around 150 MB are streamed in the worker one conversation at a time. Don't load the whole file into memory.
+- Days are bucketed in America/New_York by default. The timezone picker rebuckets in memory without rereading the file.
