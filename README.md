@@ -1,69 +1,48 @@
-# Prompt Calendar
+# chatgptlurk
 
-A public, free-to-host calendar of the prompts you sent ChatGPT. You upload your own OpenAI data export in the browser. The site turns it into a year heatmap, a month grid, a day list, search, and a conversation view.
+**[chatgptlurk.vercel.app](https://chatgptlurk.vercel.app)**
 
-## Privacy
+I export my ChatGPT data every so often and wanted to actually see it: when I was using it, how much, and what I was asking. So I built a calendar for it. Drop in your OpenAI export and you get a year heatmap of every prompt you've sent, a month view, a day-by-day list, search, and a way to read back through whole conversations.
 
-**Files never leave the visitor's device.**
+Built with Next.js and TypeScript, using Cursor.
 
-- The export is read in the browser. A Web Worker parses it. Nothing is posted to a server.
-- This app has no API routes, no database, and no account. `output: 'export'` builds a static site, so the host only serves HTML, CSS, and JavaScript.
-- The raw export is not written to disk by the app. After a successful parse, a compact index (prompt text, time, conversation title) is saved in **IndexedDB** in that browser so a refresh does not ask for the file again. That copy never leaves the device.
-- **Clear data** deletes the IndexedDB database. Closing the tab does not upload anything.
-- Do not commit a real `conversations.json`. The sample in `fixtures/` is synthetic.
+## Your data stays on your device
 
-## Run locally
+I didn't want anyone's chats (including mine) sitting on a server, so there isn't one.
 
-Node.js 20.9 or newer.
+- Your export is parsed right in the browser by a Web Worker. Nothing gets uploaded.
+- The site is fully static: no API routes, no database, no accounts.
+- After the first load, a small index (prompt text, time, conversation title) is cached in your browser's IndexedDB so a refresh doesn't make you re-upload. **Clear data** wipes it.
+
+## How to use it
+
+1. In ChatGPT, go to **Settings → Data controls → Export data**.
+2. Download the zip from the email OpenAI sends you.
+3. Drop the zip on the page (or pick `conversations.json` / `full-conversations.json` from inside it).
+
+Some things you can do once it's loaded:
+
+- Switch timezones. Days default to `America/New_York`, and changing it rebuckets everything instantly.
+- Search across every prompt. Words match anywhere, and quotes match an exact phrase.
+- Click any conversation title to read that chat's prompts in order, then step to the previous or next one.
+- Get around with the keyboard: `←/→` day, `↑/↓` week, `Shift+←/→` next active day, `[` / `]` month, `/` search. In a conversation, `←/→` moves between chats and `Esc` goes back.
+
+## Under the hood
+
+The hardest part was big exports. Mine is about 150 MB of JSON, so the parser streams it inside a Web Worker and only holds one conversation at a time plus the prompt index. The page stays responsive the whole time.
+
+The zip is unpacked in the browser with `fflate`. If the export has both `full-conversations.json` and `conversations.json`, it uses the full one, and it stitches together split `conversations-000.json` style parts when that's all there is.
+
+OpenAI's format is a list of conversations, each with a tree (`mapping`) of messages. I pull only your own messages, skip hidden and system ones, and handle the odd cases: voice transcriptions come through as text, images show as `[image]`, files as `[file: name]`, and voice-only turns as `[voice message]`.
+
+## Running it locally
+
+Needs Node.js 20.9+.
 
 ```bash
 npm install
-npm run dev
+npm run dev     # http://127.0.0.1:43123
+npm test        # parser tests against a synthetic export
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
-
-```bash
-npm test          # parser unit tests, including a synthetic export
-npm run build     # static files in out/
-```
-
-`npm run dev` is only a local dev server. It still does not receive the file. The production build is the `out/` folder. Preview it with any static file server, for example:
-
-```bash
-npx serve out -l 43123
-```
-
-## Use it
-
-1. In ChatGPT, open **Settings → Data controls → Export data**.
-2. Download the zip from the email OpenAI sends.
-3. Drop the zip on the page, or choose `conversations.json` / `full-conversations.json` from inside it.
-
-Days are bucketed in `America/New_York` until you pick another timezone. The picker rebuckets the prompts already in memory. It does not read the file again.
-
-Search matches every word. Wrap a phrase in quotes for an exact match. Click a conversation title in the day list or in search to read that chat's prompts in order. Previous and next step through conversations. Back returns to the day. The conversation list is grouped once from the prompt index already in memory. It does not read the export again.
-
-Keyboard: `←/→` day, `↑/↓` week, `Shift+←/→` next active day, `[` / `]` month, `/` search. Inside a conversation: `←/→` previous and next chat, `Esc` back to the day.
-
-Large exports (about 150 MB of JSON) are streamed in the worker so the page stays responsive. The parser keeps one conversation at a time, plus the prompt index. If the browser runs out of memory, the page shows an error and does not keep the file.
-
-## Deploy on Vercel
-
-Import this GitHub repo on the Vercel Hobby plan. Framework preset: Next.js. No environment variables. There is no serverless function and no file upload to Vercel. Pushes to `main` redeploy.
-
-**Dashboard:** import `jakedcl/chatgptlurk`. Framework: Next.js. Leave environment variables empty. Deploy.
-
-**CLI:**
-
-```bash
-npx vercel
-```
-
-`output: 'export'` in `next.config.ts` makes `next build` write static files to `out/`. Vercel serves those files. Do not add API routes that read exports, and do not put a real ChatGPT export in the repository.
-
-## How parsing works
-
-OpenAI's export is a JSON array of conversations (or an object with a `conversations` array). Each conversation has a `mapping` of messages. The parser keeps messages where `author.role === "user"`, skips `metadata.is_visually_hidden_from_conversation`, `is_user_system_message`, and `user_editable_context`, and skips empty messages. Text comes from string parts and `audio_transcription` objects. Images become `[image]`, other attachments become `[file: name]`, and voice-only turns become `[voice message]`.
-
-A zip is inflated in the browser with `fflate`. If both `full-conversations.json` and `conversations.json` are present, the full file is used. `conversations-000.json` style parts are combined when no full file is present.
+The sample export in `fixtures/` is fake data. Please don't commit a real one.
