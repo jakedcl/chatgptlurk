@@ -2,6 +2,10 @@
 
 Prompt Calendar: a free, static site that turns your own ChatGPT data export into a year heatmap, month grid, day list, search, and conversation view. Files never leave the visitor's browser.
 
+## Dev framework
+
+This repo follows Jake's dev framework: [jakedcl/dev-framework](https://github.com/jakedcl/dev-framework) (start at its `AGENTS.md`). The framework is the source of truth; if anything in this file conflicts with it, the framework wins.
+
 ## Stack
 - Next.js 16.3 with `output: "export"` (static site, `out/`), React 19.2, TypeScript, Tailwind CSS 4.
 - `fflate` inflates the zip in the browser. A Web Worker parses it. IndexedDB stores a compact prompt index.
